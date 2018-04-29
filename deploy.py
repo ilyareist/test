@@ -12,4 +12,4 @@ from resources import *
 # print('Creating EC2 instances...')
 # instances = create_ec2(ec2_client)["Instances"]
 
-print(access_key)
+print(access_key + secret_key)
