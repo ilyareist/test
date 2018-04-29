@@ -8,15 +8,7 @@ import logging, boto3, time
 # # from .elbv2Services import *
 # # from .createECSCluster import createECSCluster
 from resources import *
-# from pprint import pprint
-# # creating
-# print('Creating EC2 instances...')
-# # instances = create_ec2(ec2_client)["Instances"]
-# # instanceID=instances[0]["InstanceId"]
-# # pprint(instanceID)
-#
-# waiter=ec2_client.get_waiter('instance_running')
-# print(waiter.wait(InstanceIds=["i-051c3f5ef60db25b9"]))
+from pprint import pprint
 
 
 boto3.set_stream_logger('boto3', logging.DEBUG)
@@ -26,10 +18,78 @@ instance = ec2.create_instances(
     InstanceType='t2.micro',
     MinCount=1,
     MaxCount=1,
+    IamInstanceProfile={
+            "Name": "ecsInstanceRole"
+        },
+    SecurityGroups=[
+        'default',
+    ],
+    KeyName='aws_new',
 )[0]
-print('Created instance:', instance.id)
 instance.wait_until_running()
-time.sleep(5)
-instance.terminate()
-instance.wait_until_terminated()
-print('Terminated instance:', instance.id)
+instance.reload()
+
+print(instance.public_dns_name)
+print(instance.public_ip_address)
+print(instance.state)
+
+
+
+# ecs_client = boto3.client(
+#     'ecs',
+#     aws_access_key_id=access_key,
+#     aws_secret_access_key=secret_key,
+#     region_name=region
+# )
+#
+# response = ecs_client.register_task_definition(
+#     containerDefinitions=[
+#         {
+#           "name": "nginx",
+#           "image": "890520118857.dkr.ecr.us-east-2.amazonaws.com/test:latest",
+#           "entryPoint": [
+#             "/deployment/env/bin/python",
+#             "/deployment/start.py"
+#           ],
+#           "command": [""],
+#           "environment": [],
+#           "mountPoints": [],
+#           "volumesFrom": [],
+#           "logConfiguration": {
+#             "logDriver": "awslogs",
+#             "options": {
+#                 "awslogs-group": "awslogs-flask",
+#                 "awslogs-region": "us-east-2",
+#                 "awslogs-stream-prefix": "awslogs-flask"
+#             }
+#           },
+#           "portMappings": [
+#             {
+#               "containerPort": 5000,
+#               "hostPort": 5000
+#             }
+#           ],
+#           "memory": 256,
+#           "cpu": 512
+#         }
+#     ],
+#     family="flask"
+# )
+
+
+
+
+response = ecs_client.create_service(
+    cluster="default",
+    serviceName="ECR",
+    taskDefinition="flask",
+    desiredCount=1,
+    clientToken='request_identifier_string',
+    deploymentConfiguration={
+        'maximumPercent': 200,
+        'minimumHealthyPercent': 50
+    },
+)
+print(response)
+
+
